@@ -7,6 +7,8 @@
 ini := {}
 ini.enabledeepl := IniRead(".\user_settings.ini", "translation", "enabledeepltranslate", "False")
 ini.deeplkey := IniRead(".\user_settings.ini", "translation", "deepltranslatekey", "")
+ini.enablegemini := IniRead(".\user_settings.ini", "translation", "enablegeminitranslate", "False")
+ini.geminikey := IniRead(".\user_settings.ini", "translation", "geminitranslatekey", "")
 ini.enablegoogletranslate := IniRead(".\user_settings.ini", "translation", "enablegoogletranslate", "False")
 ini.googletranslatekey := IniRead(".\user_settings.ini", "translation", "googletranslatekey", "")
 ini.enablecommunityapi := IniRead(".\user_settings.ini", "translation", "enablecommunityapi", "False")
@@ -40,6 +42,8 @@ Launcher.AddGroupBox("Section YP+30 XP-10 w200 h170 c0B817C", "API Settings")
 Launcher.AddButton("YP+20 XP+10 w180 vValidateKey", "Validate Enabled Key").OnEvent("Click", ValidateKey)
 Launcher.AddCheckBox("YP+30 vUseDeepL Checked" . ConvertBoolToState(ini.enabledeepl), "Use DeepL")
 Launcher.AddEdit("YP+20 W180 r1 vDeepLKey", ini.deeplkey).Opt("+Password")
+Launcher.AddCheckBox("XP vUseGemini Checked" . ConvertBoolToState(ini.enablegemini), "Use Gemini")
+Launcher.AddEdit("YP+20 W180 r1 vGeminiKey", ini.geminikey).Opt("+Password")
 Launcher.AddCheckBox("XP vUseGoogleTranslate Checked" . ConvertBoolToState(ini.enablegoogletranslate), "Use Google Translate")
 Launcher.AddEdit("YP+20 W180 r1 vGoogleTranslateKey", ini.googletranslatekey).Opt("+Password")
 Launcher.AddCheckBox("XP vUseGoogleTranslateFree Checked" . ConvertBoolToState(ini.enablegoogletranslatefree), "Use Free Google Translate")
@@ -71,10 +75,12 @@ Launcher["UpdateGameFiles"].ToolTip := "Downloads/updates the modded DAT/IDX fil
 Launcher["DisableUpdates"].ToolTip := "Don't check for dqxclarity updates on launch."
 Launcher["DebugLogging"].ToolTip := "Enables more verbose logging."
 Launcher["UseDeepL"].ToolTip := "Enable DeepL as your choice of external translation."
+Launcher["UseGemini"].ToolTip := "Enable Google Gemini as your choice of external translation."
 Launcher["UseGoogleTranslate"].ToolTip := "Enable Google Translate as your choice of external translation."
 Launcher["UseCommunityApi"].ToolTip := "Enable Community Api for submitting game strings to devs."
 Launcher["UseGoogleTranslateFree"].ToolTip := "Uses the 'free' version of Google Translate. Rate limiting may ensue under use."
 Launcher["DeepLKey"].ToolTip := "Paste your DeepL API Key here."
+Launcher["GeminiKey"].ToolTip := "Paste your Gemini API Key here."
 Launcher["GoogleTranslateKey"].ToolTip := "Paste your Google Translate API Key here."
 Launcher["CommunityApiKey"].ToolTip := "Paste your Community API Key here."
 Launcher["ValidateKey"].ToolTip := "Validate that the selected API key works. Check here for status."
@@ -85,6 +91,7 @@ Launcher["GitHub"].ToolTip := "View the source code in your default browser."
 ; function handlers
 Launcher["CommunityLogging"].OnEvent("Click", CommunityLoggingWarning)
 Launcher["UseDeepL"].OnEvent("Click", CheckedDeepL)
+Launcher["UseGemini"].OnEvent("Click", CheckedGemini)
 Launcher["UseGoogleTranslate"].OnEvent("Click", CheckedGoogleTranslate)
 Launcher["UseGoogleTranslateFree"].OnEvent("Click", CheckedGoogleTranslateFree)
 Launcher["UseCommunityApi"].OnEvent("Click", CheckedCommunityApi)
@@ -111,8 +118,10 @@ CheckedCommunityApi(*) {
 CheckedDeepL(ctrl, *) {
     ; Behavior when the "Use DeepL" checkbox is checked.
     if ctrl.Value {
+        Launcher["UseGemini"].value := 0
         Launcher["UseGoogleTranslate"].value := 0
         Launcher["UseGoogleTranslateFree"].value := 0
+        Launcher["GeminiKey"].Opt("+Disabled")
         Launcher["GoogleTranslateKey"].Opt("+Disabled")
         Launcher["DeepLKey"].Opt("-Disabled")
     } else {
@@ -121,12 +130,29 @@ CheckedDeepL(ctrl, *) {
 }
 
 
+CheckedGemini(ctrl, *) {
+    ; Behavior when the "Use DeepL" checkbox is checked.
+    if ctrl.Value {
+        Launcher["UseDeepL"].value := 0
+        Launcher["UseGoogleTranslate"].value := 0
+        Launcher["UseGoogleTranslateFree"].value := 0
+        Launcher["DeepLKey"].Opt("+Disabled")
+        Launcher["GoogleTranslateKey"].Opt("+Disabled")
+        Launcher["GeminiKey"].Opt("-Disabled")
+    } else {
+        Launcher["GeminiKey"].Opt("-Disabled")
+    }
+}
+
+
 CheckedGoogleTranslate(ctrl, *) {
     ; Behavior when the "Use Google Translate" checkbox is checked.
     if ctrl.Value {
         Launcher["UseDeepL"].value := 0
+        Launcher["UseGemini"].value := 0
         Launcher["UseGoogleTranslateFree"].value := 0
         Launcher["DeepLKey"].Opt("+Disabled")
+        Launcher["GeminiKey"].Opt("+Disabled")
         Launcher["GoogleTranslateKey"].Opt("-Disabled")
     } else {
         Launcher["DeepLKey"].Opt("-Disabled")
@@ -138,11 +164,14 @@ CheckedGoogleTranslateFree(ctrl, *) {
     ; Behavior when the "Use Google Translate Free" checkbox is checked.
     if ctrl.Value {
         Launcher["UseDeepL"].value := 0
+        Launcher["UseGemini"].value := 0
         Launcher["UseGoogleTranslate"].value := 0
         Launcher["DeepLKey"].Opt("+Disabled")
+        Launcher["GeminiKey"].Opt("+Disabled")
         Launcher["GoogleTranslateKey"].Opt("+Disabled")
     } else {
         Launcher["DeepLKey"].Opt("-Disabled")
+        Launcher["GeminiKey"].Opt("-Disabled")
         Launcher["GoogleTranslateKey"].Opt("-Disabled")
     }
 }
@@ -186,6 +215,29 @@ ValidateKey(*) {
             }
         } else {
             UpdateStatusBar("Enter a key before attempting to validate.")
+        }
+    } else if (Launcher["UseGemini"].value = 1){
+        GeminiKey := Launcher["GeminiKey"].value
+        if (GeminiKey) {
+            url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" . GeminiKey
+            body := " { `"contents`": [{ `"parts`":[{`"text`": `"Validate key`"}]}] } "
+            web := ComObject('WinHttp.WinHttpRequest.5.1')
+            web.Open("POST", url)
+            web.SetRequestHeader("Content-Type", "application/json")
+            web.Send(body)
+            web.WaitForResponse()
+            Response := JSON.parse(web.ResponseText)
+            try {
+                if (Response["candidates"][1]["content"]["parts"][1]["text"]){
+                    UpdateStatusBar("Key successfully validated.")
+                }
+            } catch {
+                try {
+                    UpdateStatusBar(Response["error"]["message"])
+                } catch {
+                    UpdateStatusBar("Failed to validate key.")
+                }   
+            }
         }
     } else if (Launcher["UseGoogleTranslate"].value = 1){
         GoogleTranslateKey := Launcher["GoogleTranslateKey"].value
@@ -290,6 +342,8 @@ SaveToIni(*) {
     IniWrite(ConvertStateToBool(Launcher["DebugLogging"].value), ".\user_settings.ini", "launcher", "debuglogging")
     IniWrite(ConvertStateToBool(Launcher["UseDeepL"].value), ".\user_settings.ini", "translation", "enabledeepltranslate")
     IniWrite(Launcher["DeepLKey"].value, ".\user_settings.ini", "translation", "deepltranslatekey")
+    IniWrite(ConvertStateToBool(Launcher["UseGemini"].value), ".\user_settings.ini", "translation", "enablegeminitranslate")
+    IniWrite(Launcher["GeminiKey"].value, ".\user_settings.ini", "translation", "geminitranslatekey")
     IniWrite(ConvertStateToBool(Launcher["UseGoogleTranslate"].value), ".\user_settings.ini", "translation", "enablegoogletranslate")
     IniWrite(Launcher["GoogleTranslateKey"].value, ".\user_settings.ini", "translation", "googletranslatekey")
     IniWrite(ConvertStateToBool(Launcher["UseCommunityApi"].value), ".\user_settings.ini", "translation", "enablecommunityapi")
@@ -313,6 +367,7 @@ GetClarityArgs(*) {
     if (Launcher["DebugLogging"].value = 1)
         args := args . " " . "--debug"
     if (Launcher["UseDeepL"].value = 1 or
+        Launcher["UseGemini"].value = 1 or
         Launcher["UseGoogleTranslate"].value = 1 or
         Launcher["UseGoogleTranslateFree"].value = 1)
         args := args . " " . "--communication-window"
