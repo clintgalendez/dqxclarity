@@ -18,6 +18,9 @@ class UserConfig:
         config["translation"] = {
             "enabledeepltranslate": "False",
             "deepltranslatekey": "",
+            "enablegeminitranslate": "False",
+            "geminitranslatekey": "",
+            "geminichosenmodel": "gemini-3-flash",
             "enablegoogletranslate": "False",
             "googletranslatekey": "",
             "enablegoogletranslatefree": "False",
@@ -80,6 +83,18 @@ class UserConfig:
         return self.translation_section.get("deepltranslatekey", "")
 
     @property
+    def gemini_enabled(self) -> bool:
+        return self.translation_section.getboolean("enablegeminitranslate", False)
+
+    @property
+    def gemini_key(self) -> str:
+        return self.translation_section.get("geminitranslatekey", "")
+
+    @property
+    def gemini_model(self) -> str:
+        return self.translation_section.get("geminichosenmodel", "gemini-3-flash")
+
+    @property
     def google_enabled(self) -> bool:
         return self.translation_section.getboolean("enablegoogletranslate", False)
 
@@ -112,6 +127,8 @@ class UserConfig:
     def translate_key(self) -> str:
         if self.deepl_enabled:
             return self.deepl_key
+        if self.gemini_enabled:
+            return self.gemini_key
         if self.google_enabled:
             return self.google_key
         if self.google_free_enabled:
@@ -122,6 +139,8 @@ class UserConfig:
     def translate_service(self) -> str:
         if self.deepl_enabled:
             return "deepl"
+        if self.gemini_enabled:
+            return "gemini"
         if self.google_enabled:
             return "google"
         if self.google_free_enabled:

@@ -6,6 +6,7 @@ import unicodedata
 from common.config import UserConfig
 from common.db_ops import generate_glossary_dict, generate_m00_dict, init_db
 from common.translators.deepl import DeepLTranslate
+from common.translators.gemini import GeminiTranslate
 from common.translators.googletranslate import GoogleTranslate
 from common.translators.googletranslatefree import GoogleTranslateFree
 from functools import cache
@@ -28,12 +29,14 @@ class Translator:
     service = None
     api_key = None
     glossary = None
+    gemini_model = None
 
     def __init__(self):
         if Translator.service is None:
             self.user_settings = UserConfig()
             Translator.service = self.user_settings.translate_service
             Translator.api_key = self.user_settings.translate_key
+            Translator.gemini_model = self.user_settings.gemini_model
 
         if Translator.glossary is None:
             Translator.glossary = generate_glossary_dict()
@@ -222,6 +225,10 @@ class Translator:
 
         if Translator.service == "deepl":
             translator = DeepLTranslate(Translator.api_key)
+            return translator.translate(text)
+
+        elif Translator.service == "gemini":
+            translator = GeminiTranslate(Translator.api_key, Translator.gemini_model)
             return translator.translate(text)
 
         elif Translator.service == "google":
